@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora Proporcional - ISP</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #f9f9f9;
+      text-align: center;
+    }
+    /* Logo */
+    img.logo {
+      max-width: 200px;   /* Tamanho máximo do logo */
+      margin-bottom: 15px; /* Espaço abaixo do logo */
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 25px;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+      text-align: left;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 15px;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #resultado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      background: #eef9ee;
+      font-size: 1.1em;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <!-- Logo -->
+  <img src="spcom.png" alt="Logo da Empresa" class="logo">
+
+  <!-- Cabeçalho -->
+  <h1>Calculadora Proporcional - ISP</h1>
+
+  <label for="plano">Plano:</label>
+  <select id="plano">
+    <option value="" disabled selected>Selecione um plano</option>
+    <option value="15|59.90|69.90">15 MB Rádio - Até venc: R$64,90 / No venc: R$69,90</option>
+    <option value="30|64.90|74.90">30 MB Rádio - Até venc: R$64,90 / No venc: R$74,90</option>
+    <option value="40|89.90|99.90">40 MB Rádio - Até venc: R$89,90 / No venc: R$99,90</option>
+    <option value="60|64.90|74.90">60 MB Fibra - Até venc: R$64,90 / No venc: R$74,90</option>
+    <option value="200|79.90|89.90">200 MB Fibra - Até venc: R$79,90 / No venc: R$89,90</option>
+    <option value="300|89.90|99.90">300 MB Fibra - Até venc: R$89,90 / No venc: R$99,90</option>
+    <option value="600|109.90|119.90">600 MB Fibra - Até venc: R$109,90 / No venc: R$119,90</option>
+  </select>
+
+  <label for="cpf">Situação CPF:</label>
+  <select id="cpf">
+    <option value="aprovado">Aprovado (Nome Limpo)</option>
+    <option value="restrito">Restrito (Nome com restrição)</option>
+  </select>
+
+  <label for="metragem">Metragem do Cabo (em metros):</label>
+  <input type="number" id="metragem" placeholder="Ex: 150">
+
+  <label for="instalacao">Data da Instalação:</label>
+  <input type="date" id="instalacao">
+
+  <label for="pagamento">Data do Pagamento:</label>
+  <input type="date" id="pagamento">
+
+  <button onclick="calcular()">Calcular</button>
+
+  <div id="resultado"></div>
+
+  <script>
+    function calcular() {
+      const planoSelecionado = document.getElementById("plano").value;
+      const cpfStatus = document.getElementById("cpf").value;
+      const metragem = parseInt(document.getElementById("metragem").value);
+      const dataInstalacaoStr = document.getElementById("instalacao").value;
+      const dataPagamentoStr = document.getElementById("pagamento").value;
+
+      if (!planoSelecionado || isNaN(metragem) || !dataInstalacaoStr || !dataPagamentoStr) {
+        document.getElementById("resultado").innerText = "⚠️ Preencha todos os campos corretamente!";
+        return;
+      }
+
+      const [mb, valorAte, valorNo] = planoSelecionado.split("|").map(v => parseFloat(v) || v);
+
+      const dataInstalacao = new Date(dataInstalacaoStr + "T00:00:00");
+      const dataPagamento = new Date(dataPagamentoStr + "T00:00:00");
+
+      const anoInstalacao = dataInstalacao.getFullYear();
+      const mesInstalacao = dataInstalacao.getMonth();
+      const diasNoMesInstalacao = new Date(anoInstalacao, mesInstalacao + 1, 0).getDate();
+
+      let diasProporcionais;
+      let tipoValor;
+      let proporcional;
+
+      if (
+        dataPagamento.getMonth() === mesInstalacao &&
+        dataPagamento.getFullYear() === anoInstalacao
+      ) {
+        diasProporcionais = diasNoMesInstalacao - dataInstalacao.getDate() + 1;
+        proporcional = (valorNo / diasNoMesInstalacao) * diasProporcionais;
+        tipoValor = "Valor cheio (sem desconto)";
+      } else {
+        diasProporcionais = diasNoMesInstalacao - dataInstalacao.getDate() + 1;
+        proporcional = (valorAte / diasNoMesInstalacao) * diasProporcionais;
+        tipoValor = "Valor com desconto (até vencimento)";
+      }
+
+      // Taxa de instalação
+      let taxaInstalacao = 120;
+      if (metragem > 200 && metragem <= 500) {
+        taxaInstalacao = 240;
+      } else if (metragem > 500) {
+        taxaInstalacao = 240 + Math.ceil((metragem - 500) / 100) * 20;
+      }
+
+      // Situação CPF
+      let infoCPF = (cpfStatus === "restrito") ? "⚠️ CPF com restrição - Instalação deve ser avaliada." : "✅ CPF aprovado";
+
+      // Adicional dependendo da taxa de instalação
+      let adicionalCPF = 0;
+      if (cpfStatus === "aprovado") {
+        if (taxaInstalacao === 120) {
+          adicionalCPF = 10;
+        } else if (taxaInstalacao === 240) {
+          adicionalCPF = 20;
+        }
+      }
+
+      const valorTotal = proporcional + adicionalCPF;
+
+      document.getElementById("resultado").innerHTML = `
+        <strong>Plano:</strong> ${mb} MB<br>
+        <strong>Mensalidade até vencimento:</strong> R$ ${valorAte.toFixed(2)}<br>
+        <strong>Mensalidade no vencimento:</strong> R$ ${valorNo.toFixed(2)}<br>
+        <strong>Data da instalação:</strong> ${dataInstalacao.toLocaleDateString()}<br>
+        <strong>Data do pagamento:</strong> ${dataPagamento.toLocaleDateString()}<br>
+        <strong>Tipo de valor aplicado:</strong> ${tipoValor}<br>
+        <strong>Valor proporcional (${diasProporcionais} dias):</strong> R$ ${proporcional.toFixed(2)}<br>
+        ${cpfStatus === "aprovado" ? `<strong>Adicional CPF aprovado:</strong> R$ ${adicionalCPF.toFixed(2)}<br>` : ""}
+        <strong>Valor total a pagar:</strong> R$ ${valorTotal.toFixed(2)}<br>
+        <strong>Taxa de Instalação:</strong> R$ ${taxaInstalacao.toFixed(2)}<br>
+        <strong>Situação CPF:</strong> ${infoCPF}
+      `;
+    }
+  </script>
+</body>
+</html>
